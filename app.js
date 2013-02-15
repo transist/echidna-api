@@ -56,7 +56,7 @@ var https_options = {
 var server, https_server;
 var synonyms_client;
 
-function main(cb) {
+function main(cb, cb_https) {
   server = restify.createServer(http_options);
   setup_server(server);
 
@@ -80,18 +80,21 @@ function main(cb) {
       console.log('%s listening at %s', server.name, server.url);
     }
 
+    if(https_server) {
+      port = server.address().port + 1;
+
+      https_server.listen(port, ip, function() {
+        console.log('%s listening at %s', https_server.name, https_server.url);
+        if(cb_https) {
+          cb_https(https_server.url, https_server.address().host, https_server.address().port);
+        }
+      });
+    }
+
     if(cb) {
-      cb(server.url);
+      cb(server.url, server.address().host, server.address().port);
     }
   });
-
-  if(https_server) {
-    var port = process.env.ECHIDNA_API_PORT + 1;
-
-    https_server.listen(ip, port, function() {
-      console.log('%s listening at %s', https_server.name, https_server.url);
-    });
-  }
 }
 
 function close() {
