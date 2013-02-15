@@ -1,18 +1,37 @@
 'use strict';
+var app = require('../app.js');
 
 var restify = require('restify');
 var assert = require('assert');
-var app = require('../app.js');
+
+function createStaticReturn(cb) {
+  var http = require("http");
+  var server = http.createServer(function(request, response) {
+    response.writeHead(200, {"Content-Type": "application/json"});
+    response.write(JSON.stringify({ 'synonyms': ['hello'] }));
+    response.end();
+  });
+
+  server.listen(0, cb);
+  return server;
+}
 
 describe('API', function() {
   var client;
-  before(function() {
+
+  before(function(done) {
     process.env.ECHIDNA_API_PORT = 0;
     process.env.ECHIDNA_API_IP = "127.0.0.1";
-    app.main(function(u) {
-      client = restify.createJsonClient({
-        url: u,
-        version: '*'
+    var server;
+    server = createStaticReturn(function() {
+      process.env.ECHIDNA_SYNONYMS_API = "http://localhost:" + server.address().port;
+      console.log('static server at ' + process.env.ECHIDNA_SYNONYMS_API);
+      app.main(function(u) {
+        client = restify.createJsonClient({
+          url: u,
+          version: '*'
+        });
+        done();
       });
     });
   });
@@ -55,7 +74,7 @@ describe('API', function() {
       if(err) return done(err);
       if(res.statusCode != 200)
         return done(new Error('wrong status code ' + res.statusCode));
-      if(!obj['synonyms'])
+      if(!obj || !obj['synonyms'] || obj['synonyms'][0] != 'hello')
         return done(new Error('invalid result: ' + obj));
       //if(obj['synonyms'].length == 0)
       //  return done(new Error('no synonyms found'));

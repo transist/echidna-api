@@ -1,4 +1,5 @@
 var restify = require('restify');
+var fs = require('fs');
 
 function usage(req, res, next) {
   res.send({
@@ -27,33 +28,52 @@ function keywords(req, res, next) {
   });
 }
 
-var synonyms_url = "http://localhost:9000";
-var client = restify.createJsonClient({
-    url: synonyms_url,
-    version: '*'
-});
-
 function related_keywords(req, res, next) {
-  client.post('/v1/dicts/synonyms', {'text': req.params.keyword}, function(err, req, remote_res, obj) {
+  console.log('connecting to synonyms server ' + JSON.stringify(synonyms_client.url));
+  synonyms_client.post('/v1/dicts/synonyms', {'text': req.params.keyword}, function(err, req, remote_res, obj) {
     res.send(obj);
   });
 }
 
-var server;
-
-function main(cb) {
-  server = restify.createServer({
-    version: '1.0.0'
-  });
-
+function setup_server(server) {
   server.get('/api', usage);
   server.get('/api/brands', brands);
   server.get('/api/brands/converse', brand);
   server.get('/api/brands/:brand/keywords', keywords);
   server.get('/api/brands/:brand/keywords/:keyword', related_keywords);
+}
 
-  var port = process.env.ECHIDNA_API_PORT || 3000;
+var http_options = {
+  version: '1.0.0'
+};
+
+var https_options = {
+  key: fs.readFileSync('/etc/ssl/self-signed/server.key'),
+  certificate: fs.readFileSync('/etc/ssl/self-signed/server.crt'),
+  version: '1.0.0'
+};
+
+var server, https_server;
+var synonyms_client;
+
+function main(cb) {
+  server = restify.createServer(http_options);
+  setup_server(server);
+
+  var synonyms_url = process.env.ECHIDNA_SYNONYMS_API || "http://localhost:9000";
+  console.log('creating client ' + synonyms_url);
+  synonyms_client = restify.createJsonClient({
+      url: synonyms_url,
+      version: '*'
+  });
+
+  if(process.env.ECHIDNA_API_HTTPS) {
+    https_server = restify.createServer(https_options);
+    setup_server(https_server);
+  }
+
   var ip = process.env.ECHIDNA_API_IP || "0.0.0.0";
+  var port = process.env.ECHIDNA_API_PORT || 3000;
 
   server.listen(port, ip, function() {
     if (require.main === module) {
@@ -64,11 +84,22 @@ function main(cb) {
       cb(server.url);
     }
   });
+
+  if(https_server) {
+    var port = process.env.ECHIDNA_API_PORT + 1;
+
+    https_server.listen(ip, port, function() {
+      console.log('%s listening at %s', https_server.name, https_server.url);
+    });
+  }
 }
 
 function close() {
   if(server) {
     server.close();
+  }
+  if(https_server) {
+   https_server.close();
   }
 }
 
