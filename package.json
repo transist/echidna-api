@@ -1,0 +1,19 @@
+{
+  "name": "echidna-api",
+  "version": "0.0.0",
+  "description": "echidna API",
+  "main": "index.js",
+  "scripts": {
+    "test": "node_modules/.bin/mocha tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/transist/echidna-api"
+  },
+  "author": "Ricky Ng-Adam (rngadam@gmail.com)",
+  "license": "BSD",
+  "dependencies": {
+    "restify": "~2.2.1",
+    "mocha": "~1.8.1"
+  }
+}
