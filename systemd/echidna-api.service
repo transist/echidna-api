@@ -1,0 +1,12 @@
+[Unit]
+Description=Echidna API
+
+[Service]
+User=echidna
+EnvironmentFile=/etc/systemd/conf.d/echidna-api
+ExecStart=/home/echidna/.nvm/v0.8.19/bin/node /home/echidna/echidna-api/app.js
+Restart=Always
+RestartSec=0
+
+[Install]
+WantedBy=multi-user.target
