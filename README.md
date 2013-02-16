@@ -6,6 +6,11 @@ curl https://raw.github.com/creationix/nvm/master/install.sh | sh
 . ~/.bash_profile
 nvm ls-remote
 nvm install v0.8.19
+```
+
+and then install the dependencies:
+
+```
 npm install
 ```
 
