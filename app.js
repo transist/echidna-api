@@ -38,7 +38,7 @@ function related_keywords(req, res, next) {
 function setup_server(server) {
   server.get('/api', usage);
   server.get('/api/brands', brands);
-  server.get('/api/brands/converse', brand);
+  server.get('/api/brands/:brand', brand);
   server.get('/api/brands/:brand/keywords', keywords);
   server.get('/api/brands/:brand/keywords/:keyword', related_keywords);
 }
