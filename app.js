@@ -30,7 +30,7 @@ function keywords(req, res, next) {
 
 function related_keywords(req, res, next) {
   console.log('connecting to synonyms server ' + JSON.stringify(synonyms_client.url));
-  synonyms_client.post('/v1/dicts/synonyms', {'text': req.params.keyword}, function(err, req, remote_res, obj) {
+  synonyms_client.get('/dicts/synonyms?text=' + req.params.keyword, function(err, req, remote_res, obj) {
     res.send(obj);
   });
 }
