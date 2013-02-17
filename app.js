@@ -43,20 +43,13 @@ function setup_server(server) {
   server.get('/api/brands/:brand/keywords/:keyword', related_keywords);
 }
 
-var http_options = {
-  version: '1.0.0'
-};
-
-var https_options = {
-  key: fs.readFileSync('/etc/ssl/self-signed/server.key'),
-  certificate: fs.readFileSync('/etc/ssl/self-signed/server.crt'),
-  version: '1.0.0'
-};
-
 var server, https_server;
 var synonyms_client;
 
 function main(cb, cb_https) {
+  var http_options = {
+    version: '1.0.0'
+  };
   server = restify.createServer(http_options);
   setup_server(server);
 
@@ -68,6 +61,11 @@ function main(cb, cb_https) {
   });
 
   if(process.env.ECHIDNA_API_HTTPS) {
+    var https_options = {
+      key: fs.readFileSync('/etc/ssl/self-signed/server.key'),
+      certificate: fs.readFileSync('/etc/ssl/self-signed/server.crt'),
+      version: '1.0.0'
+    };
     https_server = restify.createServer(https_options);
     setup_server(https_server);
   }
