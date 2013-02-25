@@ -43,10 +43,10 @@ function setup_server(server) {
   server.get('/api/brands/:brand/keywords/:keyword', related_keywords);
 }
 
-var server, https_server;
+var server;
 var synonyms_client;
 
-function main(cb, cb_https) {
+function main(cb) {
   var http_options = {
     version: '1.0.0'
   };
@@ -60,33 +60,12 @@ function main(cb, cb_https) {
       version: '*'
   });
 
-  if(process.env.ECHIDNA_API_HTTPS) {
-    var https_options = {
-      key: fs.readFileSync('/etc/ssl/self-signed/server.key'),
-      certificate: fs.readFileSync('/etc/ssl/self-signed/server.crt'),
-      version: '1.0.0'
-    };
-    https_server = restify.createServer(https_options);
-    setup_server(https_server);
-  }
-
   var ip = process.env.ECHIDNA_API_IP || "0.0.0.0";
   var port = process.env.ECHIDNA_API_PORT || 3000;
 
   server.listen(port, ip, function() {
     if (require.main === module) {
       console.log('%s listening at %s', server.name, server.url);
-    }
-
-    if(https_server) {
-      port = server.address().port + 1;
-
-      https_server.listen(port, ip, function() {
-        console.log('%s listening at %s', https_server.name, https_server.url);
-        if(cb_https) {
-          cb_https(https_server.url, https_server.address().host, https_server.address().port);
-        }
-      });
     }
 
     if(cb) {
@@ -98,9 +77,6 @@ function main(cb, cb_https) {
 function close() {
   if(server) {
     server.close();
-  }
-  if(https_server) {
-   https_server.close();
   }
 }
 
