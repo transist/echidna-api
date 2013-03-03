@@ -54,3 +54,9 @@ curl -k -w "\n" "https://echidna.transi.st/api/brands/converse/keywords"
 curl -k -w "\n" "https://echidna.transi.st/api/brands/converse/keywords/%E5%A4%A7"
 curl -k -w "\n" -H 'accept: text/html' "https://echidna.transi.st/api/brands/converse/keywords/%E5%A4%A7"
 ```
+
+# Service
+
+ systemd-journalctl _SYSTEMD_UNIT=echidna-api.service
+
+ systemctl start echidna-api.service

@@ -15,6 +15,13 @@
   "license": "Proprietary",
   "dependencies": {
     "restify": "~2.2.1",
-    "mocha": "~1.8.1"
+    "mocha": "~1.8.1",
+    "node-syslog": "~1.1.7",
+    "socket.io": "~0.9.13",
+    "redis": "~0.8.2",
+    "should": "~1.2.2",
+    "socket.io-client": "~0.9.11",
+    "moment": "~2.0.0",
+    "echidna-data": "git+ssh://git@github.com:transist/echidna-data.git"
   }
 }
