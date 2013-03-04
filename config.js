@@ -28,11 +28,16 @@ function getPort(project) {
   return base_port[project] + offset;
 }
 
+function getNamespace(env) {
+  return 'e:' + process.env.USER + ':' + env[0];
+}
+
 function Config() {
   var config = {
+    ECHIDNA_ENV: process.env.ECHIDNA_ENV || 'development',
     ECHIDNA_REDIS_HOST: process.env.ECHIDNA_REDIS_HOST || "127.0.0.1",
     ECHIDNA_REDIS_PORT: process.env.ECHIDNA_REDIS_PORT || 6379,
-    ECHIDNA_REDIS_NAMESPACE: process.env.ECHIDNA_REDIS_NAMESPACE || process.env.USER + ':d',
+    ECHIDNA_REDIS_NAMESPACE: process.env.ECHIDNA_REDIS_NAMESPACE || getNamespace(process.env.ECHIDNA_ENV || 'development'),
     ECHIDNA_API_IP: process.env.ECHIDNA_API_IP || "0.0.0.0",
     ECHIDNA_API_PORT: parseInt(process.env.ECHIDNA_API_PORT) || getPort('echidna-api')
   };
