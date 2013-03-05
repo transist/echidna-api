@@ -20,8 +20,9 @@ feedconfig.setWordCount(10);
 
 // client
 function createClient(config) {
-  console.log('client connecting to ' +  config.ECHIDNA_API_PORT);
-  var socket = socketioclient.connect('http://localhost:' + config.ECHIDNA_API_PORT, options);
+  var url = process.env.ECHIDNA_API_URL || 'http://localhost:62704';
+  console.log('client connecting to ' +  url);
+  var socket = socketioclient.connect(url, options);
   socket.on('connect', function() {
     console.log('ws client connected');
 
