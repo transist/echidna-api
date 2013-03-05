@@ -48,14 +48,12 @@ function feedConsumer(key) {
   iteration++;
   redisClient.blpop(key, 0, function(err, value) {
     var message = JSON.parse(value[1]);
-    //console.log(message.time);
 
     for(var id in activeConnections) {
       var socket = activeConnections[id];
       if(socket.queueKey !== key)
         continue;
       var feedconfig = activeConnections[id].feedconfig;
-      //console.log('emitting slice on socket ' + id);
       socket.emit('slice', message);
     }
     process.nextTick(feedConsumer.bind(null, key));
@@ -77,15 +75,16 @@ function newFeedConfig(socket, data) {
   } else {
     console.log('TODO: do once: fetch and emit from trends API');
   }
-
 }
 
 function newConnection(socket) {
     console.log('ws server has a connection');
-    console.dir(socket);
     activeConnections[socket.id] = socket;
+    socket.on('disconnect', function(socket) {
+      console.log('socket ' + socket.id + ' disconnected');
+      activeConnections[socket.id] = undefined;
+    });
     socket.on('feedconfig', newFeedConfig.bind(null, socket));
-    socket.emit('ping', 'test');
 }
 
 // server
@@ -95,7 +94,7 @@ function createServer(config, cb) {
     config.ECHIDNA_API_PORT = io.server.address().port;
     cb(null, config);
   });
-
+  io.set('log level', 1);
   io.sockets.on('connection', newConnection);
 }
 

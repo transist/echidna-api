@@ -24,16 +24,15 @@ function createClient(config) {
   var socket = socketioclient.connect('http://localhost:' + config.ECHIDNA_API_PORT, options);
   socket.on('connect', function() {
     console.log('ws client connected');
-    socket.on('ping', function() {
-      console.log('ping');
-    });
+
     socket.on('slice', function(slice) {
-      //console.log('ws client received a new message');
-      //console.dir(ev);
-      //var slice = JSON.parse(ev);
       slice.words.forEach(function(v, i) {
         container.update(v.word, moment(slice.timestamp).valueOf(), v.count);
       });
+    });
+
+    socket.on('disconnect', function() {
+      console.log('client disconnected');
     });
     socket.emit('feedconfig', feedconfig.toJSON());
   });
