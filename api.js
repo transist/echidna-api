@@ -30,6 +30,7 @@ even with zero'ed values.
 // io publishes data point based on feedconfig
 // socket receives datapoint
 
+var syslog = require('node-syslog');
 var edata = require('echidna-data');
 var socketio = require('socket.io');
 //https://github.com/LearnBoost/socket.io-client
@@ -41,13 +42,24 @@ var redisClient = redis.createClient(
   config.ECHIDNA_REDIS_PORT,
   config.ECHIDNA_REDIS_HOST);
 
-var iteration = 0;
+syslog.init("node-syslog",
+  syslog.LOG_PID | syslog.LOG_ODELAY | syslog.LOG_CONS | syslog.LOG_PERORR,
+  syslog.LOG_LOCAL3);
+
+syslog.info = function(message) {
+   syslog.log(syslog.LOG_INFO, message);
+   console.log(message);
+}
+
+syslog.debug = function(message) {
+   syslog.log(syslog.LOG_DEBUG, message);
+   console.log(message);
+}
 
 var activeConnections = {};
 var activeQueues = [];
 
 function feedConsumer(key) {
-  iteration++;
   redisClient.blpop(key, 0, function(err, value) {
     var message = JSON.parse(value[1]);
 
@@ -56,6 +68,7 @@ function feedConsumer(key) {
       if(socket.queueKey !== key)
         continue;
       var feedconfig = activeConnections[id].feedconfig;
+      //syslog.debug('emitting to socket ' + soc211ket.id + ' new message ' + message);
       socket.emit('slice', message);
     }
     process.nextTick(feedConsumer.bind(null, key));
@@ -63,7 +76,7 @@ function feedConsumer(key) {
 }
 
 function newFeedConfig(socket, data) {
-  console.log('ws server received a new feedconfig');
+  syslog.info('API server received a new feedconfig from ' + socket.id);
   console.dir(data);
   var key = config.ECHIDNA_REDIS_NAMESPACE + ':queue:panel0';
   var feedconfig = new edata.FeedConfig(data);
@@ -71,19 +84,20 @@ function newFeedConfig(socket, data) {
   socket.queueKey = config.ECHIDNA_REDIS_NAMESPACE + ':queue:panel0';
   if(feedconfig.isRealtime()) {
     if(activeQueues.indexOf(socket.queueKey) === -1) {
-      feedConsumer(socket.queueKey);
       activeQueues.push(socket.queueKey);
+      syslog.info('adding feedConsumer on key: ' + socket.queueKey + ' for ' + socket.id);
+      feedConsumer(socket.queueKey);
     }
   } else {
-    console.log('TODO: do once: fetch and emit from trends API');
+    syslog.info('TODO: do once: fetch and emit from trends API');
   }
 }
 
 function newConnection(socket) {
-    console.log('ws server has a connection');
+    syslog.info('API server has a connection ' + socket.id);
     activeConnections[socket.id] = socket;
     socket.on('disconnect', function(socket) {
-      console.log('socket ' + socket.id + ' disconnected');
+      syslog.info('socket ' + socket.id + ' disconnected');
       activeConnections[socket.id] = undefined;
     });
     socket.on('feedconfig', newFeedConfig.bind(null, socket));
@@ -91,17 +105,14 @@ function newConnection(socket) {
 
 // server
 function createServer(config, cb) {
-  console.log('configured port ' + config.ECHIDNA_API_PORT);
+  syslog.info('configured port ' + config.ECHIDNA_API_PORT);
   var io = socketio.listen(config.ECHIDNA_API_PORT, function() {
-    console.log('server listening on port ' + io.server.address().port);
+    syslog.info('API server listening on port ' + io.server.address().port);
     config.ECHIDNA_API_PORT = io.server.address().port;
-    cb(null, config);
   });
   io.set('log level', 1);
   io.sockets.on('connection', newConnection);
 }
 
-createServer(config, function(err) {
-  if(err) return console.log(err);
-  console.log('Listening on port ' + config.ECHIDNA_API_PORT);
-});
+createServer(config);
+

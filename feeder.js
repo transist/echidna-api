@@ -4,29 +4,6 @@ var moment = require('moment');
 
 var redisClient = redis.createClient(config.ECHIDNA_REDIS_PORT, config.ECHIDNA_REDIS_HOST);
 
-/*
-function updateFeed(feedconfig, socket) {
-  var currentDate = new data.FeedConfig(feedconfig);
-  var endDate = moment(feedconfig.end);
-  iteration++;
-  while(endDate.isAfter(currentDate)) {
-    var slice = [];
-    for(var i=0; i<feedconfig.samples; i++) {
-      slice.push({
-        word: 'sample' + i,
-        count: iteration
-      });
-    }
-    var container = {
-      objects: slice,
-      timestamp: currentDate,
-    };
-    socket.emit('slice', JSON.stringify(container));
-    currentDate.add(feedconfig.sampling, 1);
-  }
-}
-*/
-
 var iteration = 0;
 
 function queueData() {
@@ -55,12 +32,15 @@ function queueData() {
   var multi = redisClient.multi();
   iteration++;
   var payload = JSON.stringify(data);
-  console.log(payload);
   multi.rpush(key, payload);
-  multi.ltrim(key, 0, 99);
+  multi.ltrim(key, 0, 98);
   multi.exec(function(err, replies) {
-    console.log(replies);
-    console.log('executed on key ' + key + ' iteration ' + iteration);
+    if(err) return console.log(err);
+    if(replies[0] < 100) {
+      console.log(replies);
+      console.log('executed on key ' + key + ' iteration ' + iteration);
+    }
+
   });
 }
 

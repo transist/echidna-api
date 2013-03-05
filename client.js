@@ -35,6 +35,9 @@ function createClient(config) {
     socket.on('disconnect', function() {
       console.log('client disconnected');
     });
+
+    var fc = feedconfig.toJSON();
+    console.log('Emitting feedconfig ' + fc);
     socket.emit('feedconfig', feedconfig.toJSON());
   });
 }
