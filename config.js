@@ -22,7 +22,7 @@ var base_port = {
 
 function getPort(project) {
   var offset = users_offset[process.env.USER];
-  if(!users_offset[process.env.USER])
+  if(offset === undefined)
     offset = users_offset['development'];
 
   return base_port[project] + offset;
