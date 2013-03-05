@@ -30,32 +30,62 @@ even with zero'ed values.
 // io publishes data point based on feedconfig
 // socket receives datapoint
 
+var edata = require('echidna-data');
 var socketio = require('socket.io');
 //https://github.com/LearnBoost/socket.io-client
 var moment = require('moment');
+var redis = require('redis');
+var config = new require('./config.js');
 
-var config = new require('./config.js').Config();
+var redisClient = redis.createClient(config.ECHIDNA_REDIS_PORT, config.ECHIDNA_REDIS_HOST);
 
 var iteration = 0;
-function updateFeed(feedconfig, socket) {
-  var currentDate = moment(feedconfig.start);
-  var endDate = moment(feedconfig.end);
+
+var activeConnections = {};
+var activeQueues = [];
+
+function feedConsumer(key) {
   iteration++;
-  while(endDate.isAfter(currentDate)) {
-    var slice = [];
-    for(var i=0; i<feedconfig.samples; i++) {
-      slice.push({
-        word: 'sample' + i,
-        count: iteration
-      });
+  redisClient.blpop(key, 0, function(err, value) {
+    var message = JSON.parse(value[1]);
+    //console.log(message.time);
+
+    for(var id in activeConnections) {
+      var socket = activeConnections[id];
+      if(socket.queueKey !== key)
+        continue;
+      var feedconfig = activeConnections[id].feedconfig;
+      //console.log('emitting slice on socket ' + id);
+      socket.emit('slice', message);
     }
-    var container = {
-      objects: slice,
-      timestamp: currentDate,
-    };
-    socket.emit('slice', JSON.stringify(container));
-    currentDate.add(feedconfig.sampling, 1);
+    process.nextTick(feedConsumer.bind(null, key));
+  });
+}
+
+function newFeedConfig(socket, data) {
+  console.log('ws server received a new feedconfig');
+  console.dir(data);
+  var key = config.ECHIDNA_REDIS_NAMESPACE + ':queue:panel0';
+  var feedconfig = new edata.FeedConfig(data);
+  socket.feedconfig =  new edata.FeedConfig(data);
+  socket.queueKey = config.ECHIDNA_REDIS_NAMESPACE + ':queue:panel0';
+  if(feedconfig.isRealtime()) {
+    if(activeQueues.indexOf(socket.queueKey) === -1) {
+      feedConsumer(socket.queueKey);
+      activeQueues.push(socket.queueKey);
+    }
+  } else {
+    console.log('TODO: do once: fetch and emit from trends API');
   }
+
+}
+
+function newConnection(socket) {
+    console.log('ws server has a connection');
+    console.dir(socket);
+    activeConnections[socket.id] = socket;
+    socket.on('feedconfig', newFeedConfig.bind(null, socket));
+    socket.emit('ping', 'test');
 }
 
 // server
@@ -66,14 +96,7 @@ function createServer(config, cb) {
     cb(null, config);
   });
 
-  io.sockets.on('connection', function(socket) {
-    console.log('ws server has a connection');
-    socket.on('feedconfig', function (data) {
-      console.log('ws server received a new feedconfig');
-      console.dir(data);
-      setInterval(updateFeed.bind(null, data, socket), 1000);
-    });
-  });
+  io.sockets.on('connection', newConnection);
 }
 
 createServer(config, function(err) {
