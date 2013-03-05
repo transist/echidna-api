@@ -37,7 +37,9 @@ var moment = require('moment');
 var redis = require('redis');
 var config = new require('./config.js');
 
-var redisClient = redis.createClient(config.ECHIDNA_REDIS_PORT, config.ECHIDNA_REDIS_HOST);
+var redisClient = redis.createClient(
+  config.ECHIDNA_REDIS_PORT,
+  config.ECHIDNA_REDIS_HOST);
 
 var iteration = 0;
 
@@ -89,6 +91,7 @@ function newConnection(socket) {
 
 // server
 function createServer(config, cb) {
+  console.log('configured port ' + config.ECHIDNA_API_PORT);
   var io = socketio.listen(config.ECHIDNA_API_PORT, function() {
     console.log('server listening on port ' + io.server.address().port);
     config.ECHIDNA_API_PORT = io.server.address().port;
