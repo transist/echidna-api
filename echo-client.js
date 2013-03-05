@@ -1,14 +1,16 @@
 var socketioclient = require('socket.io-client');
 
-var url = 'http://127.0.0.1:9999';
-console.log('connecting to ' + url);
+var base = 'http://127.0.0.1:9999';
 
+var uri = process.env.ECHIDNA_ECHO_URI || 'socket.io';
 var options = {
+  //resource: uri + '/socket.io'
 };
 
-var socket = socketioclient.connect(url, options);
+console.log('connecting to ' + base);
+console.log('options ' + JSON.stringify(options));
+var socket = socketioclient.connect(base, options);
 
-// The usage of .of() is important
 socket.on('pong', function(data) {
   console.log('pong: ' + data);
 });
