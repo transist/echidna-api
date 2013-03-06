@@ -5,6 +5,7 @@ var socketioclient = require('socket.io-client');
 var data = require('echidna-data');
 var container = new data.D3Container();
 var feedconfig = new data.FeedConfig();
+
 var config = new require('./config.js');
 var moment = require('moment');
 
@@ -13,7 +14,7 @@ var options ={
   'force new connection': true
 };
 
-feedconfig.setDemographics('Women',  '18-', 'Tier1');
+feedconfig.setDemographics('Women',  '18-', '1');
 //feedconfig.setHistoric('2013-03-01T11:00:00', '2013-03-01T11:02:00', 'minute');
 feedconfig.setRealtime('minute', 30);
 feedconfig.setWordCount(10);
@@ -27,9 +28,9 @@ function createClient(config) {
     console.log('ws client connected');
 
     socket.on('slice', function(slice) {
-      slice.words.forEach(function(v, i) {
-        container.update(v.word, moment(slice.timestamp).valueOf(), v.count);
-      });
+      console.log('slice is: ' + JSON.stringify(slice));
+      var s = new data.Slice(slice);
+      container.updateSlice(s);
     });
 
     socket.on('disconnect', function() {

@@ -46,6 +46,11 @@ syslog.init("node-syslog",
   syslog.LOG_PID | syslog.LOG_ODELAY | syslog.LOG_CONS | syslog.LOG_PERORR,
   syslog.LOG_LOCAL3);
 
+syslog.error = function(message) {
+   syslog.log(syslog.LOG_ERROR, message);
+   console.log(message);
+}
+
 syslog.info = function(message) {
    syslog.log(syslog.LOG_INFO, message);
    console.log(message);
@@ -88,8 +93,10 @@ function newFeedConfig(socket, data) {
       syslog.info('adding feedConsumer on key: ' + socket.queueKey + ' for ' + socket.id);
       feedConsumer(socket.queueKey);
     }
-  } else {
+  } else if(feedconfig.isHistoric()) {
     syslog.info('TODO: do once: fetch and emit from trends API');
+  } else {
+    syslog.error('Unknown feedconfig configuration ' + JSON.stringify(feedconfig));
   }
 }
 
