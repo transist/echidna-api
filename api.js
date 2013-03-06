@@ -66,6 +66,7 @@ var activeQueues = [];
 
 function feedConsumer(key) {
   redisClient.blpop(key, 0, function(err, value) {
+    if(err) return syslog.err(err);
     var message = JSON.parse(value[1]);
 
     for(var id in activeConnections) {
@@ -83,9 +84,10 @@ function feedConsumer(key) {
 function newFeedConfig(socket, data) {
   syslog.info('API server received a new feedconfig from ' + socket.id);
   console.dir(data);
-  var panelid = 'panel-other'; // TODO; lookup queue id based on feedconfig parameters
   var feedconfig = new edata.FeedConfig(data);
   socket.feedconfig =  new edata.FeedConfig(data);
+
+  var panelid = 'panel-other'; // TODO; lookup queue id based on feedconfig parameters
   socket.queueKey = config.ECHIDNA_REDIS_NAMESPACE + ':' + panelid + '/trends';
 
   if(feedconfig.isRealtime()) {
