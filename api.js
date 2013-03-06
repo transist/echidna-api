@@ -94,7 +94,7 @@ function newFeedConfig(socket, data) {
       activeQueues.push(socket.queueKey);
       feedConsumer(socket.queueKey);
     } else {
-      syslog.info('queue already active, not adding: ' + queueKey);
+      syslog.info('queue already active, not adding: ' + socket.queueKey);
     }
   } else if(feedconfig.isHistoric()) {
     syslog.info('TODO: do once: fetch and emit from trends API');
