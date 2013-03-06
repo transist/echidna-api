@@ -28,7 +28,7 @@ function queueData() {
     ]
   };
 
-  var key = config.ECHIDNA_REDIS_NAMESPACE + ':queue:panel0';
+  var key = config.ECHIDNA_REDIS_NAMESPACE + ':panel-other/trends';
   var multi = redisClient.multi();
   iteration++;
   var payload = JSON.stringify(data);

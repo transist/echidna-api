@@ -83,15 +83,18 @@ function feedConsumer(key) {
 function newFeedConfig(socket, data) {
   syslog.info('API server received a new feedconfig from ' + socket.id);
   console.dir(data);
-  var key = config.ECHIDNA_REDIS_NAMESPACE + ':queue:panel0';
+  var panelid = 'panel-other'; // TODO; lookup queue id based on feedconfig parameters
   var feedconfig = new edata.FeedConfig(data);
   socket.feedconfig =  new edata.FeedConfig(data);
-  socket.queueKey = config.ECHIDNA_REDIS_NAMESPACE + ':queue:panel0';
+  socket.queueKey = config.ECHIDNA_REDIS_NAMESPACE + ':' + panelid + '/trends';
+
   if(feedconfig.isRealtime()) {
     if(activeQueues.indexOf(socket.queueKey) === -1) {
-      activeQueues.push(socket.queueKey);
       syslog.info('adding feedConsumer on key: ' + socket.queueKey + ' for ' + socket.id);
+      activeQueues.push(socket.queueKey);
       feedConsumer(socket.queueKey);
+    } else {
+      syslog.info('queue already active, not adding: ' + queueKey);
     }
   } else if(feedconfig.isHistoric()) {
     syslog.info('TODO: do once: fetch and emit from trends API');
