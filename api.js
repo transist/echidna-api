@@ -88,7 +88,7 @@ function newFeedConfig(socket, data) {
   socket.feedconfig =  new edata.FeedConfig(data);
 
   var panelid = 'panel-other'; // TODO; lookup queue id based on feedconfig parameters
-  socket.queueKey = config.ECHIDNA_REDIS_NAMESPACE + ':' + panelid + '/trends';
+  socket.queueKey = config.ECHIDNA_REDIS_NAMESPACE + ':api:messages/' + panelid + '/trends';
 
   if(feedconfig.isRealtime()) {
     if(activeQueues.indexOf(socket.queueKey) === -1) {
