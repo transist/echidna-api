@@ -42,7 +42,7 @@ var redisClient = redis.createClient(
   config.ECHIDNA_REDIS_PORT,
   config.ECHIDNA_REDIS_HOST);
 
-syslog.init("node-syslog",
+syslog.init("api",
   syslog.LOG_PID | syslog.LOG_ODELAY | syslog.LOG_CONS | syslog.LOG_PERORR,
   syslog.LOG_LOCAL3);
 
@@ -61,19 +61,19 @@ syslog.debug = function(message) {
    console.log(message);
 }
 
-var activeConnections = {};
 var activeQueues = [];
-
+var io;
 function feedConsumer(key) {
   redisClient.brpop(key, 0, function(err, value) {
     if(err) return syslog.err(err);
     var message = JSON.parse(value[1]);
-
-    for(var id in activeConnections) {
-      var socket = activeConnections[id];
+    var clients = io.sockets.clients();
+    for(var id in clients) {
+      var socket = clients[id];
       if(socket.queueKey !== key)
         continue;
-      var feedconfig = activeConnections[id].feedconfig;
+      var feedconfig = socket.feedconfig;
+      // TODO: make a decision if this slice applies to this feedconfig
       //syslog.debug('emitting to socket ' + soc211ket.id + ' new message ' + message);
       socket.emit('slice', message);
     }
@@ -107,10 +107,8 @@ function newFeedConfig(socket, data) {
 
 function newConnection(socket) {
     syslog.info('API server has a connection ' + socket.id);
-    activeConnections[socket.id] = socket;
     socket.on('disconnect', function(socket) {
       syslog.info('socket ' + socket.id + ' disconnected');
-      activeConnections[socket.id] = undefined;
     });
     socket.on('feedconfig', newFeedConfig.bind(null, socket));
 }
@@ -118,12 +116,12 @@ function newConnection(socket) {
 // server
 function createServer(config, cb) {
   syslog.info('configured port ' + config.ECHIDNA_API_PORT);
-  var io = socketio.listen(config.ECHIDNA_API_PORT, function() {
+  io = socketio.listen(config.ECHIDNA_API_PORT, function() {
     syslog.info('API server listening on port ' + io.server.address().port);
     config.ECHIDNA_API_PORT = io.server.address().port;
   });
   io.set('log level', 1);
-  io.sockets.on('connection', newConnection);
+  io.sockets.on('connection', newConnection.bind());
 }
 
 createServer(config);
