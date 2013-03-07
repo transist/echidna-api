@@ -65,7 +65,7 @@ var activeConnections = {};
 var activeQueues = [];
 
 function feedConsumer(key) {
-  redisClient.blpop(key, 0, function(err, value) {
+  redisClient.brpop(key, 0, function(err, value) {
     if(err) return syslog.err(err);
     var message = JSON.parse(value[1]);
 
