@@ -44,4 +44,4 @@ function queueData() {
   });
 }
 
-setInterval(queueData, 100);
+setInterval(queueData, 1000);
