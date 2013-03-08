@@ -30,6 +30,7 @@ function createClient(config) {
     socket.on('slice', function(slice) {
       console.log('slice is: ' + JSON.stringify(slice));
       var s = new data.Slice(slice);
+      s.checkValid();
       container.updateSlice(s);
     });
 

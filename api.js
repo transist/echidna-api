@@ -74,7 +74,7 @@ function feedConsumer(key) {
         continue;
       var feedconfig = socket.feedconfig;
       // TODO: make a decision if this slice applies to this feedconfig
-      //syslog.debug('emitting to socket ' + soc211ket.id + ' new message ' + message);
+      //syslog.debug('emitting to socket ' + socket.id + ' new message ' + message);
       socket.emit('slice', message);
     }
     process.nextTick(feedConsumer.bind(null, key));
