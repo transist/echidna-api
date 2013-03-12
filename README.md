@@ -19,10 +19,11 @@ Application Programming Interface for the Echidna system.
 
 # TODO
 
-Must
+Must:
 
-* retrieve historical data (lib/historical.js)
-* change queue based on feedconfig (lib/queue.js)
+* DONE: retrieve historical data (lib/historical.js) and emit
+* change queue based on feedconfig (lib/group.js)
+ * if queue is not present as a key, select a random valid queue
 
 Should
 

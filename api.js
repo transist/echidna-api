@@ -40,8 +40,8 @@ function feedConsumer(key) {
   redisClient.brpop(key, 0, function(err, value) {
     //TODO: these errors permanently abort the feed consumer...
     if(err) return syslog.err(err);
-    var message = JSON.parse(value[1]);
-    if(!(message instanceof Array)) {
+    var slices = JSON.parse(value[1]);
+    if(!(slices instanceof Array)) {
       return syslog.err('Expected Array, got ' + value[1]);
     }
 
@@ -56,7 +56,6 @@ function feedConsumer(key) {
         continue;
       // only iterate for as many words are requested
       emitSlices(socket, slices);
-
     }
     process.nextTick(feedConsumer.bind(null, key));
   });
@@ -80,7 +79,7 @@ function emitSlices(socket, slices) {
         console.log('MATCHING slice #' + i + ' emitting count words ' + slice.words.length);
         socket.emit('slice', slice);
       } else {
-        console.log('NOT MATCHING: type ' + slice.type + ' sampling ' + socket.feedconfig.sampling);
+        console.log('NOT MATCHING: type ' + slices[i].type + ' sampling ' + socket.feedconfig.sampling);
       }
   }
 }

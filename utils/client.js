@@ -14,7 +14,7 @@ var options ={
   'force new connection': true
 };
 
-var DESIRED_WORD_COUNT = 2;
+var DESIRED_WORD_COUNT = 5;
 var DESIRED_X_VALUES = 30;
 feedconfig.setDemographics('Women',  '18-', '1');
 //feedconfig.setHistoric('2013-03-01T11:00:00', '2013-03-01T11:02:00', 'minute');
