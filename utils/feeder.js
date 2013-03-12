@@ -1,8 +1,10 @@
 var redis = require('redis');
-var config = require('./config.js');
+var config = require('../config.js');
 var moment = require('moment');
 
-var redisClient = redis.createClient(config.ECHIDNA_REDIS_PORT, config.ECHIDNA_REDIS_HOST);
+var redisClient = redis.createClient(
+  config.ECHIDNA_REDIS_PORT,
+  config.ECHIDNA_REDIS_HOST);
 
 var iteration = 0;
 

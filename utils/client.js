@@ -6,7 +6,7 @@ var data = require('echidna-data');
 var container = new data.D3Container();
 var feedconfig = new data.FeedConfig();
 
-var config = new require('./config.js');
+var config = new require('../config.js');
 var moment = require('moment');
 
 var options ={

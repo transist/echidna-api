@@ -1,6 +1,6 @@
 
 var redis = require('redis');
-var config = new require('./config.js');
+var config = new require('../config.js');
 var key = config.ECHIDNA_REDIS_NAMESPACE + ':queue:panel0';
 
 var redisClient = redis.createClient(config.ECHIDNA_REDIS_PORT, config.ECHIDNA_REDIS_HOST);

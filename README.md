@@ -2,7 +2,13 @@
 
 Application Programming Interface for the Echidna system.
 
-# Node.JS installation
+# Overview
+
+* api.js: websocket API
+
+# Installation
+
+## Node.JS installation
 
 ```
 curl https://raw.github.com/creationix/nvm/master/install.sh | sh
@@ -17,46 +23,43 @@ and then install the dependencies:
 npm install
 ```
 
-# Development
+## Development
 
 ```
 npm -g install supervisor
-supervisor app.js
+supervisor api.js
 ```
 
-# Running tests
+## Running tests
 
 ```
 npm test
 ```
 
-# URL command-line encoding
+## nginx
 
-To encode characters suitable for encoder:
+see [https://github.com/transist/echidna/blob/master/echidna1/conf/home/echidna/nginx/conf/nginx.conf nginx.conf]
 
-http://meyerweb.com/eric/tools/dencoder/
-
-# Testing locally
-
-```
-curl -w "\n" "echidna1.local:8080/api/brands/converse/keywords/%E4%BC%8D%E6%80%9D%E5%8A%9B
-curl -w "\n" -H 'accept: text/*' "echidna1.local:8080/api/brands"
-curl -w "\n" -H 'accept: application/octet-stream' "echidna1.local:8080/api/brands"
-```
-
-# Testing API (remotely)
-
-```
-curl -k -w "\n" "https://echidna.transi.st/api"
-curl -k -w "\n" "https://echidna.transi.st/api/brands"
-curl -k -w "\n" "https://echidna.transi.st/api/brands/converse"
-curl -k -w "\n" "https://echidna.transi.st/api/brands/converse/keywords"
-curl -k -w "\n" "https://echidna.transi.st/api/brands/converse/keywords/%E5%A4%A7"
-curl -k -w "\n" -H 'accept: text/html' "https://echidna.transi.st/api/brands/converse/keywords/%E5%A4%A7"
-```
+# Testing integration
 
 # Service
 
- systemd-journalctl _SYSTEMD_UNIT=echidna-api.service
+Service is deployed and run in production as user echidna.
 
- systemctl start echidna-api.service
+See: [https://github.com/transist/echidna/blob/master/echidna1/conf/etc/systemd/system/echidna-api.service echidna-api.service]
+
+look at the logs:
+
+    systemd-journalctl _SYSTEMD_UNIT=echidna-api.service
+
+start the service:
+
+    systemctl start echidna-api.service
+
+restarting the service:
+
+    systemctl restart echidna-api.service
+
+getting the status:
+
+    systemctl status echidna-api.service
