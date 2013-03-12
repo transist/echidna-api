@@ -89,14 +89,9 @@ function emitHistoricalData(socket, err, slices) {
   emitSlices(socket, slices);
 }
 
-function newFeedConfig(socket, data) {
-  syslog.info('API server received a new feedconfig from ' + socket.id);
-  console.dir(data);
-  socket.feedconfig = new edata.FeedConfig(data);
-
-  var panelid = group.getGroupId(socket.feedconfig);
-  socket.queueKey = config.ECHIDNA_REDIS_NAMESPACE + ':api/messages/' + panelid + '/trends';
-  //socket.queueKey ='e:echidna:p:api/messages/' + panelid + '/trends';
+function newConsumer(socket, data, err, groupid) {
+  socket.queueKey = config.ECHIDNA_REDIS_NAMESPACE + ':api/messages/' + groupid + '/trends';
+  //socket.queueKey ='e:echidna:p:api/messages/' + groupid + '/trends';
   //socket.queueKey = 'e:echidna:p:api/messages/group-other/trends';
 
   if(socket.feedconfig.isRealtime()) {
@@ -113,7 +108,7 @@ function newFeedConfig(socket, data) {
       socket.feedconfig.numberItems)
 
     historical.getHistoricalData(
-      panelid,
+      groupid,
       socket.feedconfig.sampling,
       start.utc().format(),
       end.utc().format(),
@@ -121,7 +116,7 @@ function newFeedConfig(socket, data) {
 
   } else if(socket.feedconfig.isHistorical()) {
     historical.getHistoricalData(
-      panelid,
+      groupid,
       socket.feedconfig.sampling,
       socket.feedconfig.start,
       socket.feedconfig.end,
@@ -130,6 +125,14 @@ function newFeedConfig(socket, data) {
     syslog.error('Unknown feedconfig configuration ' + JSON.stringify(socket.feedconfig));
     return;
   }
+}
+
+function newFeedConfig(socket, data) {
+  syslog.info('API server received a new feedconfig from ' + socket.id);
+  console.dir(data);
+  socket.feedconfig = new edata.FeedConfig(data);
+
+  group.getGroupId(socket.feedconfig, newConsumer.bind(null, socket, data));
 }
 
 function newConnection(socket) {
