@@ -38,38 +38,56 @@ var io;
 function feedConsumer(key) {
   // blocking call to Redis
   redisClient.brpop(key, 0, function(err, value) {
+    //TODO: these errors permanently abort the feed consumer...
     if(err) return syslog.err(err);
     var message = JSON.parse(value[1]);
     if(!(message instanceof Array)) {
       return syslog.err('Expected Array, got ' + value[1]);
     }
+
     // for every connected client, we check if the
     // queue matches what this consumer is looking for
     // and if yes, publish every update that has the same sampling
     var clients = io.sockets.clients();
     for(var id in clients) {
       var socket = clients[id];
+      // only if its the queue this socket wants
       if(socket.queueKey !== key)
         continue;
-      message.forEach(function(v, i) {
-          // this is the correct panel, we just need to check sampling
-          if(socket.feedconfig.sampling === v.type) {
-            console.log('MATCHING, emitting');
-            socket.emit('slice', v);
-          } else {
-            console.log('NOT MATCHING: type ' + v.type + ' sampling ' + socket.feedconfig.sampling);
-          }
-      });
+      // only iterate for as many words are requested
+      emitSlices(socket, slices);
+
     }
     process.nextTick(feedConsumer.bind(null, key));
   });
 }
 
-function emitHistoricalData(socket, err, obj) {
+function emitSlices(socket, slices) {
+  // select the socket.feedconfig.count words that have the highest frequency across
+  // all slices...
+  var max;
+  if(socket.feedconfig.numberItems) {
+    max = slices.length < socket.feedconfig.numberItems ? slices.length : socket.feedconfig.numberItems;
+  } else {
+    max = slices.length;
+  }
+
+  for(var i=0; i<max; i++) {
+      // this is the correct panel, we just need to check sampling
+      if(socket.feedconfig.sampling === slices[i].type) {
+        var slice = new edata.Slice(slices[i]);
+        slice.words = slice.words.slice(0, socket.feedconfig.count);
+        console.log('MATCHING slice #' + i + ' emitting count words ' + slice.words.length);
+        socket.emit('slice', slice);
+      } else {
+        console.log('NOT MATCHING: type ' + slice.type + ' sampling ' + socket.feedconfig.sampling);
+      }
+  }
+}
+
+function emitHistoricalData(socket, err, slices) {
   if(err) return syslog.error(err);
-  obj.forEach(function(v, i) {
-    socket.emit('slice', v);
-  });
+  emitSlices(socket, slices);
 }
 
 function newFeedConfig(socket, data) {

@@ -14,10 +14,11 @@ var options ={
   'force new connection': true
 };
 
-var DESIRED_WORD_COUNT = 10;
+var DESIRED_WORD_COUNT = 2;
+var DESIRED_X_VALUES = 30;
 feedconfig.setDemographics('Women',  '18-', '1');
 //feedconfig.setHistoric('2013-03-01T11:00:00', '2013-03-01T11:02:00', 'minute');
-feedconfig.setRealtime('hour', 30);
+feedconfig.setRealtime('hour', DESIRED_X_VALUES);
 feedconfig.setWordCount(DESIRED_WORD_COUNT);
 
 // client
@@ -26,12 +27,16 @@ function createClient(config) {
   console.log('client connecting to ' +  url + ' options ' + JSON.stringify(options));
   var socket = socketioclient.connect(url, options);
   socket.on('connect', function() {
-    console.log('client connected');
+    console.log('client connected ');
 
     socket.on('slice', function(slice) {
       var stringified = JSON.stringify(slice);
       console.log('slice is: ' + stringified);
       var s = new data.Slice(slice);
+      if(s.words.length > DESIRED_WORD_COUNT)
+        console.log(
+          'Warning: Desired word count ' + DESIRED_WORD_COUNT
+          + ' Actual word count ' + s.words.length);
       s.checkValid();
       container.updateSlice(s);
     });
@@ -52,11 +57,7 @@ process.stdin.resume();
 process.stdin.on('data', function(chunk) {
   var current = container.current();
   console.log(JSON.stringify(current, null, "\t"));
-
-  //TODO: turn into automated tests...
-  if(current.length > DESIRED_WORD_COUNT) {
-    console.log(
-      'Warning: Desired word count ' + DESIRED_WORD_COUNT
-      + ' Actual word count ' + current.length);
-  }
+  console.log('number of unique words: ' + current.length);
+  if(current.length > 0)
+    console.log('number of time units: ' + current[0].values.length);
 });
