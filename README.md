@@ -4,7 +4,33 @@ Application Programming Interface for the Echidna system.
 
 # Overview
 
-* api.js: websocket API
+## api.js: websocket API
+
+* receives websocket connection from echidna-api
+ * receives feedconfig
+  * feedconfig is associated to socket
+   * initial set of data points is sent from historical data
+
+* monitors and receives messages from Redis queues fed by echidna-streaming
+ * list of objects containing type and words list
+  * for every object
+   * find matching realtime feedconfig from all connected client
+    * if match found, send data slice
+
+# TODO
+
+Must:
+
+* DONE: retrieve historical data (lib/historical.js) and emit
+* DONE: change queue based on feedconfig (lib/group.js)
+ * if queue is not present as a key, select a random valid queue
+
+Should
+
+* Move all the state data to Redis
+ * should be able to instantiate multiple echidna-api processes
+
+Optional
 
 # Installation
 
@@ -41,6 +67,8 @@ npm test
 see [nginx.conf](https://github.com/transist/echidna/blob/master/echidna1/conf/home/echidna/nginx/conf/nginx.conf)
 
 # Testing integration
+
+
 
 # Service
 

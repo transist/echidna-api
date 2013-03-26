@@ -1,42 +1,14 @@
 'use strict';
 
-/*
-
-* must receive every new word and generate datapoints for the matchings feedconfigs
-* must be able to populate a timeline with the top n words for every sampling
-period
-* must be able to update client timeline with this structure:
-  [
-    {key: 'string', values: [{x, y, sourceid}, {x, y, sourceid}, ...]},
-    {key: 'string', values: [{x, y, sourceid}, {x, y, sourceid}, ...]},
-    ...
-  ]
-
-values array must match (length and x must be the same) for every single key string
-
-...a simultaneous update problem... given a new word and count for a certain timeslice, we
-must also update every other values array for every word to "extend" the array in that direction,
-even with zero'ed values.
-
-
-*/
-
-// redisSubscriber subscribes to datapoints events
-// socket publishes feedconfig
-// io receives feedconfig
-// io stores feedconfig to redis
-// redisPublisher publishes new data point (word)
-// redisSubscriber receives published data point
-// io publishes data point based on feedconfig
-// socket receives datapoint
-
 var syslog = require('node-syslog');
 var edata = require('echidna-data');
 var socketio = require('socket.io');
-//https://github.com/LearnBoost/socket.io-client
 var moment = require('moment');
 var redis = require('redis');
+
 var config = new require('./config.js');
+var group = new require('./lib/group.js');
+var historical = new require('./lib/historical.js');
 
 var redisClient = redis.createClient(
   config.ECHIDNA_REDIS_PORT,
@@ -64,33 +36,65 @@ syslog.debug = function(message) {
 var activeQueues = [];
 var io;
 function feedConsumer(key) {
+  // blocking call to Redis
   redisClient.brpop(key, 0, function(err, value) {
+    //TODO: these errors permanently abort the feed consumer...
     if(err) return syslog.err(err);
-    var message = JSON.parse(value[1]);
+    var slices = JSON.parse(value[1]);
+    if(!(slices instanceof Array)) {
+      return syslog.err('Expected Array, got ' + value[1]);
+    }
+
+    // for every connected client, we check if the
+    // queue matches what this consumer is looking for
+    // and if yes, publish every update that has the same sampling
     var clients = io.sockets.clients();
     for(var id in clients) {
       var socket = clients[id];
+      // only if its the queue this socket wants
       if(socket.queueKey !== key)
         continue;
-      var feedconfig = socket.feedconfig;
-      // TODO: make a decision if this slice applies to this feedconfig
-      //syslog.debug('emitting to socket ' + socket.id + ' new message ' + message);
-      socket.emit('slice', message);
+      // only iterate for as many words are requested
+      emitSlices(socket, slices);
     }
     process.nextTick(feedConsumer.bind(null, key));
   });
 }
 
-function newFeedConfig(socket, data) {
-  syslog.info('API server received a new feedconfig from ' + socket.id);
-  console.dir(data);
-  var feedconfig = new edata.FeedConfig(data);
-  socket.feedconfig =  new edata.FeedConfig(data);
+function emitSlices(socket, slices) {
+  // select the socket.feedconfig.count words that have the highest frequency across
+  // all slices...
+  var max;
+  if(socket.feedconfig.numberItems) {
+    max = slices.length < socket.feedconfig.numberItems ? slices.length : socket.feedconfig.numberItems;
+  } else {
+    max = slices.length;
+  }
 
-  var panelid = 'panel-other'; // TODO; lookup queue id based on feedconfig parameters
-  socket.queueKey = config.ECHIDNA_REDIS_NAMESPACE + ':api:messages/' + panelid + '/trends';
+  for(var i=0; i<max; i++) {
+      // this is the correct panel, we just need to check sampling
+      if(socket.feedconfig.sampling === slices[i].type) {
+        var slice = new edata.Slice(slices[i]);
+        slice.words = slice.words.slice(0, socket.feedconfig.count);
+        console.log('MATCHING slice #' + i + ' emitting count words ' + slice.words.length);
+        socket.emit('slice', slice);
+      } else {
+        console.log('NOT MATCHING: type ' + slices[i].type + ' sampling ' + socket.feedconfig.sampling);
+      }
+  }
+}
 
-  if(feedconfig.isRealtime()) {
+function emitHistoricalData(socket, err, slices) {
+  if(err) return syslog.error(err);
+  emitSlices(socket, slices);
+}
+
+function newConsumer(socket, data, err, groupid) {
+  socket.queueKey = config.ECHIDNA_REDIS_NAMESPACE + ':api/messages/' + groupid + '/trends';
+  //socket.queueKey ='e:echidna:p:api/messages/' + groupid + '/trends';
+  //socket.queueKey = 'e:echidna:p:api/messages/group-other/trends';
+
+  if(socket.feedconfig.isRealtime()) {
     if(activeQueues.indexOf(socket.queueKey) === -1) {
       syslog.info('adding feedConsumer on key: ' + socket.queueKey + ' for ' + socket.id);
       activeQueues.push(socket.queueKey);
@@ -98,11 +102,37 @@ function newFeedConfig(socket, data) {
     } else {
       syslog.info('queue already active, not adding: ' + socket.queueKey);
     }
-  } else if(feedconfig.isHistoric()) {
-    syslog.info('TODO: do once: fetch and emit from trends API');
+    var end = moment();
+    var start = moment().subtract(
+      socket.feedconfig.sampling,
+      socket.feedconfig.numberItems)
+
+    historical.getHistoricalData(
+      groupid,
+      socket.feedconfig.sampling,
+      start.utc().format(),
+      end.utc().format(),
+      emitHistoricalData.bind(null, socket))
+
+  } else if(socket.feedconfig.isHistorical()) {
+    historical.getHistoricalData(
+      groupid,
+      socket.feedconfig.sampling,
+      socket.feedconfig.start,
+      socket.feedconfig.end,
+      emitHistoricalData.bind(null, socket))
   } else {
-    syslog.error('Unknown feedconfig configuration ' + JSON.stringify(feedconfig));
+    syslog.error('Unknown feedconfig configuration ' + JSON.stringify(socket.feedconfig));
+    return;
   }
+}
+
+function newFeedConfig(socket, data) {
+  syslog.info('API server received a new feedconfig from ' + socket.id);
+  console.dir(data);
+  socket.feedconfig = new edata.FeedConfig(data);
+
+  group.getGroupId(socket.feedconfig, newConsumer.bind(null, socket, data));
 }
 
 function newConnection(socket) {
