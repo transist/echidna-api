@@ -1,3 +1,4 @@
+// TODO: deprecated: queue has been renamed (kept for future debugging.)
 var redis = require('redis');
 var config = require('../config.js');
 var moment = require('moment');
