@@ -1,4 +1,4 @@
-
+//TODO: this file is deprecated
 var redis = require('redis');
 var config = new require('../config.js');
 var key = config.ECHIDNA_REDIS_NAMESPACE + ':queue:panel0';
